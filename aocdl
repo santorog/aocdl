@@ -4,7 +4,7 @@ EMPTY_SESSION="session="
 
 # The session coookie of for https://adventofcode.com
 # Add yours as "${EMPTY_SESSION}52616c74252422.."
-SESSION="${EMPTY_SESSION}53616c7465645f5f2b97d2b22ceb77f6b2eb84b0ffe342a7138dd40cb852390cadd26ad4e160c766b05e0c6d472095ad"
+SESSION="${EMPTY_SESSION}"
 
 # Current date
 DAY=$(date '+%-d')
