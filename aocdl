@@ -14,6 +14,9 @@ YEAR=$CURRENT_YEAR
 # Output path
 OUTPUT_PATH=""
 
+# Download a single file by default
+SINGLE_FILE=false
+
 usage() { echo "Usage: $(basename "$0") [-c <session_cookie>] [-d <day>] [-y <year>] [-o '<output_file>']"; }
 
 intent() { echo "Downloads AOC puzzle input(s)."; }
@@ -30,7 +33,7 @@ arguments() {
 
 options() {
     echo -e "\nOptions:"
-    echo "  -a,  download all puzzle inputs (not yet supported)"
+    echo "  -a,  download all puzzle inputs"
     echo "  -h,  show help"
 }
 
@@ -42,7 +45,7 @@ show_help(){
     options
 }
 
-while getopts "c:d:y:o:h" opt; do
+while getopts "c:d:y:o:ah" opt; do
     case "${opt}" in
         c)
             SESSION="${EMPTY_SESSION}${OPTARG}";;
@@ -52,6 +55,8 @@ while getopts "c:d:y:o:h" opt; do
             YEAR=${OPTARG};;
         o)
             OUTPUT_PATH=${OPTARG};;
+        a)
+            SINGLE_FILE=false;;
         h)
             show_help && exit 0;;
         *)
@@ -64,34 +69,54 @@ exit_with(){
 }
 
 check_session_cookie() {
-    if [ "$SESSION" = "$EMPTY_SESSION" ]; then
+    if [[ $SESSION = "$EMPTY_SESSION" ]]; then
         exit_with "Please set the session cookie in the script or using the option -c."
     fi
 }
 
 check_day_and_year() {
-    if [ "$YEAR" -lt 2015 ] || [ "$YEAR" -gt "$CURRENT_YEAR" ]; then 
+    if [[ $YEAR -lt 2015 ]] || [[ $YEAR -gt "$CURRENT_YEAR" ]]; then 
         exit_with "The year requested must be between 2015 (creation of AOC) and $CURRENT_YEAR."
     fi
-    if [ "$DAY" -lt 1 ] || [ "$DAY" -gt 25 ]; then 
+    if [[ $DAY -lt 1 ]] || [[ $DAY -gt 25 ]]; then 
         exit_with "The day requested must be between 1 and 25."
     fi
 }
 
 check_output_path() {
-    [ -f "$OUTPUT_PATH" ] && exit_with "Output file '$OUTPUT_PATH' already exists."
+    if [[ $OUTPUT_PATH = "" ]]; then OUTPUT_PATH="$1/day$2.txt"; fi
+    [[ -f "$OUTPUT_PATH" ]] && exit_with "Output file '$OUTPUT_PATH' already exists."
+    DIR=$(dirname "$OUTPUT_PATH")
+    [[ -d "$DIR" ]] || mkdir -p "$DIR" 
+}
+
+download() {
+    check_output_path "$@"
+    URL="https://adventofcode.com/$1/day/$2/input"
+    curl -s -b "$SESSION" "$URL" -o "$OUTPUT_PATH"
+}
+
+download_all_files() {
+    days=($(seq 1 1 25))
+    years=($(seq 2015 1 $((CURRENT_YEAR-1)) ))
+    for year in "${years[@]}"
+    do
+        for day in "${days[@]}"
+        do
+            OUTPUT_PATH=""
+            download "$year" "$day"
+        done
+    done
 }
 
 # Perform checks on the parameters passed.
 check_session_cookie
 check_day_and_year
 
-download() {
-    if [ "$OUTPUT_PATH" = "" ]; then OUTPUT_PATH="$1/day$2.txt"; fi
-    check_output_path
-    URL="https://adventofcode.com/$1/day/$2/input"
-    curl -b "$SESSION" "$URL" -o "$OUTPUT_PATH"
-}
-
-download "$YEAR" "$DAY"
+# Run the download
+if $SINGLE_FILE; then
+    download "$YEAR" "$DAY"
+else
+    download_all_files
+fi
 
