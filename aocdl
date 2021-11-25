@@ -1,0 +1,97 @@
+#!/bin/bash
+
+EMPTY_SESSION="session="
+
+# The session coookie of for https://adventofcode.com
+# Add yours as "${EMPTY_SESSION}52616c74252422.."
+SESSION="${EMPTY_SESSION}53616c7465645f5f2b97d2b22ceb77f6b2eb84b0ffe342a7138dd40cb852390cadd26ad4e160c766b05e0c6d472095ad"
+
+# Current date
+DAY=$(date '+%-d')
+CURRENT_YEAR=$(date '+%Y')
+YEAR=$CURRENT_YEAR
+
+# Output path
+OUTPUT_PATH=""
+
+usage() { echo "Usage: $(basename "$0") [-c <session_cookie>] [-d <day>] [-y <year>] [-o '<output_file>']"; }
+
+intent() { echo "Downloads AOC puzzle input(s)."; }
+
+example() { echo "Example: aocdl -c 5211ca2... -d 3 -y 2016 -o 'input_2016-3.txt'"; }
+
+arguments() {
+    echo -e "\nOptional arguments:"
+    echo "  -c,  set a specific session cookie"
+    echo "  -d,  set a specific date for the download"
+    echo "  -y,  set a specific year for the download"
+    echo "  -o,  set a specific output file"
+}
+
+options() {
+    echo -e "\nOptions:"
+    echo "  -a,  download all puzzle inputs (not yet supported)"
+    echo "  -h,  show help"
+}
+
+show_help(){
+    usage
+    intent
+    example
+    arguments
+    options
+}
+
+while getopts "c:d:y:o:h" opt; do
+    case "${opt}" in
+        c)
+            SESSION="${EMPTY_SESSION}${OPTARG}";;
+        d)
+            DAY=${OPTARG};;
+        y)
+            YEAR=${OPTARG};;
+        o)
+            OUTPUT_PATH=${OPTARG};;
+        h)
+            show_help && exit 0;;
+        *)
+            echo -e "Incorrect syntax.\n" && show_help && exit 1;;
+    esac
+done
+
+exit_with(){
+    echo -e "$1\nAborting." && exit 1;
+}
+
+check_session_cookie() {
+    if [ "$SESSION" = "$EMPTY_SESSION" ]; then
+        exit_with "Please set the session cookie in the script or using the option -c."
+    fi
+}
+
+check_day_and_year() {
+    if [ "$YEAR" -lt 2015 ] || [ "$YEAR" -gt "$CURRENT_YEAR" ]; then 
+        exit_with "The year requested must be between 2015 (creation of AOC) and $CURRENT_YEAR."
+    fi
+    if [ "$DAY" -lt 1 ] || [ "$DAY" -gt 25 ]; then 
+        exit_with "The day requested must be between 1 and 25."
+    fi
+}
+
+check_output_path() {
+    [ -f "$OUTPUT_PATH" ] && exit_with "Output file '$OUTPUT_PATH' already exists."
+}
+
+# Perform checks on the parameters passed.
+check_session_cookie
+check_day_and_year
+
+download() {
+    if [ "$OUTPUT_PATH" = "" ]; then OUTPUT_PATH="$1/day$2.txt"; fi
+    check_output_path
+    URL="https://adventofcode.com/$1/day/$2/input"
+    curl -b "$SESSION" "$URL" -o "$OUTPUT_PATH"
+}
+
+download "$YEAR" "$DAY"
+
