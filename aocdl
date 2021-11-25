@@ -15,7 +15,7 @@ YEAR=$CURRENT_YEAR
 OUTPUT_PATH=""
 
 # Download a single file by default
-SINGLE_FILE=false
+SINGLE_FILE=true
 
 usage() { echo "Usage: $(basename "$0") [-c <session_cookie>] [-d <day>] [-y <year>] [-o '<output_file>']"; }
 
@@ -87,7 +87,9 @@ check_output_path() {
     if [[ $OUTPUT_PATH = "" ]]; then OUTPUT_PATH="$1/day$2.txt"; fi
     [[ -f "$OUTPUT_PATH" ]] && exit_with "Output file '$OUTPUT_PATH' already exists."
     DIR=$(dirname "$OUTPUT_PATH")
-    [[ -d "$DIR" ]] || mkdir -p "$DIR" 
+    if [[ ! -d "$DIR" ]]; then
+        mkdir -p "$DIR" && echo "Creating directory $DIR/" 
+    fi
 }
 
 download() {
