@@ -2,13 +2,16 @@
 
 EMPTY_SESSION="session="
 
-# The session coookie of for https://adventofcode.com
+# The session coookie for https://adventofcode.com
 # Add yours as "${EMPTY_SESSION}52616c74252422.."
 SESSION="${EMPTY_SESSION}"
 
 # Current date
 DAY=$(date '+%-d')
+MONTH=$(date '+%-m')
 CURRENT_YEAR=$(date '+%Y')
+
+# Year requested, by default the current year
 YEAR=$CURRENT_YEAR
 
 # Output path
@@ -68,24 +71,38 @@ exit_with(){
     echo -e "$1\nAborting." && exit 1;
 }
 
-check_session_cookie() {
+check_session_cookie_is_set() {
+    # The session cookie must be hardcoded or set using -c 
     if [[ $SESSION = "$EMPTY_SESSION" ]]; then
         exit_with "Please set the session cookie in the script or using the option -c."
     fi
 }
 
 check_day_and_year() {
+    # the year requested must be between 2015 and the current year
     if [[ $YEAR -lt 2015 ]] || [[ $YEAR -gt "$CURRENT_YEAR" ]]; then 
         exit_with "The year requested must be between 2015 (creation of AOC) and $CURRENT_YEAR."
     fi
+
+    # if the year requested and it's not december yet then abort
+    if [[ $YEAR -eq "$CURRENT_YEAR" ]] && [[ $MONTH -lt 12 ]]; then
+        exit_with "It's not Advent season yet... ¯\\_(⊙︿⊙)_/¯"
+    fi
+
+    # the day requested must be between 1 and 25
     if [[ $DAY -lt 1 ]] || [[ $DAY -gt 25 ]]; then 
         exit_with "The day requested must be between 1 and 25."
     fi
 }
 
 check_output_path() {
+    # if no output path is specified we use the format {yyyy}/day{dd}.txt
     if [[ $OUTPUT_PATH = "" ]]; then OUTPUT_PATH="$1/day$2.txt"; fi
+
+    # if the file already exists the script stops 
     [[ -f "$OUTPUT_PATH" ]] && exit_with "Output file '$OUTPUT_PATH' already exists."
+
+    # handle directories if they do not exist yet
     DIR=$(dirname "$OUTPUT_PATH")
     if [[ ! -d "$DIR" ]]; then
         mkdir -p "$DIR" && echo "Creating directory $DIR/" 
@@ -99,8 +116,8 @@ download() {
 }
 
 download_all_files() {
-    days=($(seq 1 1 25))
-    years=($(seq 2015 1 $((CURRENT_YEAR-1)) ))
+    mapfile -t days < <(seq 1 1 25)
+    mapfile -t years < <(seq 2015 1 $((CURRENT_YEAR-1)) )
     for year in "${years[@]}"
     do
         for day in "${days[@]}"
@@ -112,7 +129,7 @@ download_all_files() {
 }
 
 # Perform checks on the parameters passed.
-check_session_cookie
+check_session_cookie_is_set
 check_day_and_year
 
 # Run the download
